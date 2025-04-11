@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员控制台</title>
+    <style>
+        /* 修改整体颜色方案为深蓝色主题 */
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* 修改导航栏背景为深蓝色渐变 */
+        .admin-sidebar {
+            width: 250px;
+            background: linear-gradient(to bottom, #0d47a1, #1976d2);
+            padding: 1rem 0;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .nav-logo {
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 1rem 1.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        /* 导航链接悬停效果改为蓝色系 */
+        .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 0.8rem 1.5rem;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+        }
+        
+        .nav-link:hover {
+            background: rgba(255,255,255,0.15);
+        }
+        
+        .nav-link.active {
+            background: rgba(255,255,255,0.25);
+            border-left: 4px solid #bbdefb;
+        }
+        
+        /* 主体内容卡片添加蓝色边框 */
+        .admin-content {
+            flex: 1;
+            padding: 2rem;
+            background-color: #e3f2fd;
+        }
+        
+        .content-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 1.5rem;
+            border-left: 4px solid #1976d2;
+        }
+        
+        /* 修改标题颜色为深蓝色 */
+        .content-card h2 {
+            color: #0d47a1;
+            margin-top: 0;
+        }
+        
+        .content-section {
+            display: none;
+        }
+        
+        .content-section.active {
+            display: block;
+        }
+
+        /* 统计卡片样式 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-left: 4px solid #1976d2;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1976d2;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* 用户管理表格样式 */
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .users-table th,
+        .users-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .users-table th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .users-table tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        /* 按钮样式 */
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 0 4px;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background-color: #1976d2;
+            color: white;
+        }
+
+        .btn-success {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        .btn-warning {
+            background-color: #ff9800;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.8;
+        }
+
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 400px;
+            max-width: 90%;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            margin: 0;
+            color: #1976d2;
+        }
+
+        .close {
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        /* 表单样式 */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #1976d2;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+
+        /* 用户状态标签 */
+        .user-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .user-badge.admin {
+            background-color: #ff5722;
+            color: white;
+        }
+
+        .user-badge.user {
+            background-color: #2196f3;
+            color: white;
+        }
+
+        /* 操作按钮容器 */
+        .actions {
+            white-space: nowrap;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .admin-container {
+                flex-direction: column;
+            }
+
+            .admin-sidebar {
+                width: 100%;
+                padding: 1rem;
+            }
+
+            .nav-links {
+                flex-direction: row;
+                overflow-x: auto;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .users-table {
+                font-size: 14px;
+            }
+
+            .users-table td,
+            .users-table th {
+                padding: 8px 4px;
+            }
+        }
+
+        /* 配置选项卡样式 */
+        .config-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .config-tab {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            color: #666;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .config-tab:hover {
+            color: #1976d2;
+            background-color: #f5f5f5;
+        }
+
+        .config-tab.active {
+            color: #1976d2;
+            border-bottom-color: #1976d2;
+            font-weight: bold;
+        }
+
+        /* 配置内容样式 */
+        .config-content {
+            display: none;
+        }
+
+        .config-content.active {
+            display: block;
+        }
+
+        .config-content h3 {
+            color: #1976d2;
+            margin: 0;
+        }
+
+        /* 配置表格样式 */
+        .config-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .config-table th,
+        .config-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .config-table th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .config-table tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        /* 颜色预览样式 */
+        .color-preview {
+            width: 100px;
+            height: 30px;
+            border-radius: 4px;
+            display: inline-block;
+            border: 1px solid #ddd;
+        }
+
+        /* 价格样式 */
+        .price-display {
+            font-weight: bold;
+            color: #1976d2;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- 左侧导航栏 -->
+        <div class="admin-sidebar">
+            <div class="nav-logo">管理员控制台</div>
+            <div class="nav-links">
+                <a href="#" class="nav-link active" onclick="switchSection('dashboard')">信息显示界面</a>
+                <a href="#" class="nav-link" onclick="switchSection('permission')">权限管理界面</a>
+                <a href="#" class="nav-link" onclick="switchSection('settings')">设置界面</a>
+                <a href="/admin/logout" class="nav-link">退出登录</a>
+            </div>
+        </div>
+
+        <!-- 主体内容 -->
+        <div class="admin-content">
+            <!-- 信息显示界面 -->
+            <div id="dashboard" class="content-section active">
+                <div class="content-card">
+                    <h2>系统概览</h2>
+                    <div class="stats-grid" id="statsGrid">
+                        <!-- 统计数据将通过JavaScript加载 -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 权限管理界面 -->
+            <div id="permission" class="content-section">
+                <div class="content-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2>用户管理</h2>
+                        <button class="btn btn-success" onclick="showAddUserModal()">+ 添加用户</button>
+                    </div>
+                    
+                    <table class="users-table" id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>用户名</th>
+                                <th>权限</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <!-- 用户数据将通过JavaScript加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 设置界面 -->
+            <div id="settings" class="content-section">
+                <div class="content-card">
+                    <h2>系统设置</h2>
+                    
+                    <!-- 配置选项卡 -->
+                    <div class="config-tabs">
+                        <button class="config-tab active" onclick="switchConfigTab('status')">项目状态</button>
+                        <button class="config-tab" onclick="switchConfigTab('source')">项目来源</button>
+                        <button class="config-tab" onclick="switchConfigTab('board-type')">电路板类型</button>
+                        <button class="config-tab" onclick="switchConfigTab('component')">元器件管理</button>
+                    </div>
+                    
+                    <!-- 项目状态配置 -->
+                    <div id="status-config" class="config-content active">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3>项目状态配置</h3>
+                            <button class="btn btn-success" onclick="showAddStatusModal()">+ 添加状态</button>
+                        </div>
+                        <table class="config-table">
+                            <thead>
+                                <tr>
+                                    <th>值</th>
+                                    <th>标签</th>
+                                    <th>颜色</th>
+                                    <th>排序</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="statusConfigTableBody">
+                                <!-- 数据将通过JavaScript加载 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- 项目来源配置 -->
+                    <div id="source-config" class="config-content">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3>项目来源配置</h3>
+                            <button class="btn btn-success" onclick="showAddSourceModal()">+ 添加来源</button>
+                        </div>
+                        <table class="config-table">
+                            <thead>
+                                <tr>
+                                    <th>名称</th>
+                                    <th>排序</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sourceConfigTableBody">
+                                <!-- 数据将通过JavaScript加载 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- 电路板类型配置 -->
+                    <div id="board-type-config" class="config-content">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3>电路板类型配置</h3>
+                            <button class="btn btn-success" onclick="showAddBoardTypeModal()">+ 添加类型</button>
+                        </div>
+                        <table class="config-table">
+                            <thead>
+                                <tr>
+                                    <th>名称</th>
+                                    <th>排序</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="boardTypeConfigTableBody">
+                                <!-- 数据将通过JavaScript加载 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- 元器件管理 -->
+                    <div id="component-config" class="config-content">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3>元器件管理</h3>
+                            <button class="btn btn-success" onclick="showAddComponentModal()">+ 添加元器件</button>
+                        </div>
+                        <table class="config-table">
+                            <thead>
+                                <tr>
+                                    <th>名称</th>
+                                    <th>型号</th>
+                                    <th>价格(元)</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="componentConfigTableBody">
+                                <!-- 数据将通过JavaScript加载 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加/编辑用户模态框 -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">添加用户</h3>
+                <span class="close" onclick="closeUserModal()">&times;</span>
+            </div>
+            <form id="userForm">
+                <div class="form-group">
+                    <label for="username">用户名:</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">密码:</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="is_admin" name="is_admin">
+                        <label for="is_admin">管理员权限</label>
+                    </div>
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="btn" onclick="closeUserModal()">取消</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 添加/编辑状态配置模态框 -->
+    <div id="statusConfigModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="statusModalTitle">添加状态</h3>
+                <span class="close" onclick="closeStatusConfigModal()">&times;</span>
+            </div>
+            <form id="statusConfigForm">
+                <div class="form-group">
+                    <label for="statusValue">状态值:</label>
+                    <input type="text" id="statusValue" name="value" required>
+                </div>
+                <div class="form-group">
+                    <label for="statusLabel">显示标签:</label>
+                    <input type="text" id="statusLabel" name="label" required>
+                </div>
+                <div class="form-group">
+                    <label for="statusColor">颜色 (CSS渐变):</label>
+                    <input type="text" id="statusColor" name="color" placeholder="linear-gradient(...)" required>
+                </div>
+                <div class="form-group">
+                    <label for="statusSortOrder">排序序号:</label>
+                    <input type="number" id="statusSortOrder" name="sort_order" value="0" min="0">
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="btn" onclick="closeStatusConfigModal()">取消</button>
+                    <button type="submit" class="btn btn-primary" id="statusSubmitBtn">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 添加/编辑来源配置模态框 -->
+    <div id="sourceConfigModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="sourceModalTitle">添加来源</h3>
+                <span class="close" onclick="closeSourceConfigModal()">&times;</span>
+            </div>
+            <form id="sourceConfigForm">
+                <div class="form-group">
+                    <label for="sourceName">来源名称:</label>
+                    <input type="text" id="sourceName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="sourceSortOrder">排序序号:</label>
+                    <input type="number" id="sourceSortOrder" name="sort_order" value="0" min="0">
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="btn" onclick="closeSourceConfigModal()">取消</button>
+                    <button type="submit" class="btn btn-primary" id="sourceSubmitBtn">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 添加/编辑电路板类型配置模态框 -->
+    <div id="boardTypeConfigModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="boardTypeModalTitle">添加电路板类型</h3>
+                <span class="close" onclick="closeBoardTypeConfigModal()">&times;</span>
+            </div>
+            <form id="boardTypeConfigForm">
+                <div class="form-group">
+                    <label for="boardTypeName">类型名称:</label>
+                    <input type="text" id="boardTypeName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="boardTypeSortOrder">排序序号:</label>
+                    <input type="number" id="boardTypeSortOrder" name="sort_order" value="0" min="0">
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="btn" onclick="closeBoardTypeConfigModal()">取消</button>
+                    <button type="submit" class="btn btn-primary" id="boardTypeSubmitBtn">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 添加/编辑元器件模态框 -->
+    <div id="componentConfigModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="componentModalTitle">添加元器件</h3>
+                <span class="close" onclick="closeComponentConfigModal()">&times;</span>
+            </div>
+            <form id="componentConfigForm">
+                <div class="form-group">
+                    <label for="componentName">元器件名称:</label>
+                    <input type="text" id="componentName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="componentModel">型号:</label>
+                    <input type="text" id="componentModel" name="model" required>
+                </div>
+                <div class="form-group">
+                    <label for="componentPrice">价格(元):</label>
+                    <input type="number" id="componentPrice" name="price" step="0.01" min="0" required>
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="btn" onclick="closeComponentConfigModal()">取消</button>
+                    <button type="submit" class="btn btn-primary" id="componentSubmitBtn">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentEditUserId = null;
+        let currentEditConfigId = null;
+        let currentConfigType = null;
+
+        // 切换内容区域的函数
+        function switchSection(sectionId) {
+            // 隐藏所有内容区域
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // 显示选中的内容区域
+            document.getElementById(sectionId).classList.add('active');
+            
+            // 更新导航链接状态
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // 根据选择的区域加载相应数据
+            if (sectionId === 'dashboard') {
+                loadStats();
+            } else if (sectionId === 'permission') {
+                loadUsers();
+            } else if (sectionId === 'settings') {
+                loadConfigs();
+            }
+        }
+
+        // 切换配置选项卡
+        function switchConfigTab(configType) {
+            // 隐藏所有配置内容
+            document.querySelectorAll('.config-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 显示选中的配置内容
+            document.getElementById(configType + '-config').classList.add('active');
+            
+            // 更新选项卡状态
+            document.querySelectorAll('.config-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // 加载对应的配置数据
+            loadConfigData(configType);
+        }
+
+        // 加载所有配置数据
+        function loadConfigs() {
+            loadConfigData('status');
+            loadConfigData('source');
+            loadConfigData('board-type');
+            loadConfigData('component');
+        }
+
+        // 加载指定类型的配置数据
+        async function loadConfigData(configType) {
+            try {
+                let url = `/api/admin/config/${configType}`;
+                if (configType === 'component') {
+                    url = '/api/components';
+                }
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayConfigData(configType, data);
+                } else {
+                    console.error(`加载${configType}配置失败:`, data.error);
+                }
+            } catch (error) {
+                console.error(`加载${configType}配置时出错:`, error);
+            }
+        }
+
+        // 显示配置数据
+        function displayConfigData(configType, data) {
+            // 根据配置类型获取正确的tbody ID
+            let tbodyId;
+            if (configType === 'status') {
+                tbodyId = 'statusConfigTableBody';
+            } else if (configType === 'source') {
+                tbodyId = 'sourceConfigTableBody';
+            } else if (configType === 'board-type') {
+                tbodyId = 'boardTypeConfigTableBody';
+            } else if (configType === 'component') {
+                tbodyId = 'componentConfigTableBody';
+            }
+            
+            const tbody = document.getElementById(tbodyId);
+            
+            if (!tbody) {
+                console.error(`找不到表格元素: ${tbodyId}`);
+                return;
+            }
+            
+            if (configType === 'status') {
+                tbody.innerHTML = data.map(item => `
+                    <tr>
+                        <td>${item.value}</td>
+                        <td>${item.label}</td>
+                        <td>
+                            <div class="color-preview" style="background: ${item.color}"></div>
+                        </td>
+                        <td>${item.sort_order}</td>
+                        <td class="actions">
+                            <button class="btn btn-warning" onclick="showEditStatusModal(${item.id}, '${item.value}', '${item.label}', '${item.color}', ${item.sort_order})">编辑</button>
+                            <button class="btn btn-danger" onclick="deleteConfig('status', ${item.id})">删除</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } else if (configType === 'source') {
+                tbody.innerHTML = data.map(item => `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td>${item.sort_order}</td>
+                        <td class="actions">
+                            <button class="btn btn-warning" onclick="showEditSourceModal(${item.id}, '${item.name}', ${item.sort_order})">编辑</button>
+                            <button class="btn btn-danger" onclick="deleteConfig('source', ${item.id})">删除</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } else if (configType === 'board-type') {
+                tbody.innerHTML = data.map(item => `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td>${item.sort_order}</td>
+                        <td class="actions">
+                            <button class="btn btn-warning" onclick="showEditBoardTypeModal(${item.id}, '${item.name}', ${item.sort_order})">编辑</button>
+                            <button class="btn btn-danger" onclick="deleteConfig('board-type', ${item.id})">删除</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } else if (configType === 'component') {
+                tbody.innerHTML = data.map(item => `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td>${item.model}</td>
+                        <td class="price-display">¥${item.price.toFixed(2)}</td>
+                        <td class="actions">
+                            <button class="btn btn-warning" onclick="showEditComponentModal(${item.id}, '${item.name}', '${item.model}', ${item.price})">编辑</button>
+                            <button class="btn btn-danger" onclick="deleteConfig('component', ${item.id})">删除</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        // 状态配置相关函数
+        function showAddStatusModal() {
+            currentEditConfigId = null;
+            document.getElementById('statusModalTitle').textContent = '添加状态';
+            document.getElementById('statusSubmitBtn').textContent = '添加';
+            document.getElementById('statusConfigForm').reset();
+            document.getElementById('statusConfigModal').style.display = 'block';
+        }
+
+        function showEditStatusModal(id, value, label, color, sortOrder) {
+            currentEditConfigId = id;
+            document.getElementById('statusModalTitle').textContent = '编辑状态';
+            document.getElementById('statusSubmitBtn').textContent = '保存';
+            document.getElementById('statusValue').value = value;
+            document.getElementById('statusLabel').value = label;
+            document.getElementById('statusColor').value = color;
+            document.getElementById('statusSortOrder').value = sortOrder;
+            document.getElementById('statusConfigModal').style.display = 'block';
+        }
+
+        function closeStatusConfigModal() {
+            document.getElementById('statusConfigModal').style.display = 'none';
+            currentEditConfigId = null;
+        }
+
+        // 来源配置相关函数
+        function showAddSourceModal() {
+            currentEditConfigId = null;
+            document.getElementById('sourceModalTitle').textContent = '添加来源';
+            document.getElementById('sourceSubmitBtn').textContent = '添加';
+            document.getElementById('sourceConfigForm').reset();
+            document.getElementById('sourceConfigModal').style.display = 'block';
+        }
+
+        function showEditSourceModal(id, name, sortOrder) {
+            currentEditConfigId = id;
+            document.getElementById('sourceModalTitle').textContent = '编辑来源';
+            document.getElementById('sourceSubmitBtn').textContent = '保存';
+            document.getElementById('sourceName').value = name;
+            document.getElementById('sourceSortOrder').value = sortOrder;
+            document.getElementById('sourceConfigModal').style.display = 'block';
+        }
+
+        function closeSourceConfigModal() {
+            document.getElementById('sourceConfigModal').style.display = 'none';
+            currentEditConfigId = null;
+        }
+
+        // 电路板类型配置相关函数
+        function showAddBoardTypeModal() {
+            currentEditConfigId = null;
+            document.getElementById('boardTypeModalTitle').textContent = '添加电路板类型';
+            document.getElementById('boardTypeSubmitBtn').textContent = '添加';
+            document.getElementById('boardTypeConfigForm').reset();
+            document.getElementById('boardTypeConfigModal').style.display = 'block';
+        }
+
+        function showEditBoardTypeModal(id, name, sortOrder) {
+            currentEditConfigId = id;
+            document.getElementById('boardTypeModalTitle').textContent = '编辑电路板类型';
+            document.getElementById('boardTypeSubmitBtn').textContent = '保存';
+            document.getElementById('boardTypeName').value = name;
+            document.getElementById('boardTypeSortOrder').value = sortOrder;
+            document.getElementById('boardTypeConfigModal').style.display = 'block';
+        }
+
+        function closeBoardTypeConfigModal() {
+            document.getElementById('boardTypeConfigModal').style.display = 'none';
+            currentEditConfigId = null;
+        }
+
+        // 元器件配置相关函数
+        function showAddComponentModal() {
+            currentEditConfigId = null;
+            document.getElementById('componentModalTitle').textContent = '添加元器件';
+            document.getElementById('componentSubmitBtn').textContent = '添加';
+            document.getElementById('componentConfigForm').reset();
+            document.getElementById('componentConfigModal').style.display = 'block';
+        }
+
+        function showEditComponentModal(id, name, model, price) {
+            currentEditConfigId = id;
+            document.getElementById('componentModalTitle').textContent = '编辑元器件';
+            document.getElementById('componentSubmitBtn').textContent = '保存';
+            document.getElementById('componentName').value = name;
+            document.getElementById('componentModel').value = model;
+            document.getElementById('componentPrice').value = price;
+            document.getElementById('componentConfigModal').style.display = 'block';
+        }
+
+        function closeComponentConfigModal() {
+            document.getElementById('componentConfigModal').style.display = 'none';
+            currentEditConfigId = null;
+        }
+
+        // 通用删除配置函数
+        async function deleteConfig(configType, configId) {
+            const confirmMessage = `确定要删除这个${getConfigTypeName(configType)}吗？如果有项目正在使用，将无法删除。`;
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+
+            try {
+                let url = `/api/admin/config/${configType}/${configId}`;
+                if (configType === 'component') {
+                    url = `/api/admin/config/component/${configId}`;
+                }
+                
+                const response = await fetch(url, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert(result.message);
+                    loadConfigData(configType);
+                } else {
+                    alert('错误: ' + result.error);
+                }
+            } catch (error) {
+                alert('删除失败: ' + error.message);
+            }
+        }
+
+        function getConfigTypeName(configType) {
+            const names = {
+                'status': '状态',
+                'source': '来源',
+                'board-type': '电路板类型',
+                'component': '元器件'
+            };
+            return names[configType] || configType;
+        }
+
+        // 配置表单提交处理
+        async function submitConfigForm(configType, form) {
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            // 转换数字字段
+            if (data.sort_order !== undefined) {
+                data.sort_order = parseInt(data.sort_order);
+            }
+            if (data.price !== undefined) {
+                data.price = parseFloat(data.price);
+            }
+
+            try {
+                let url = `/api/admin/config/${configType}`;
+                let method = 'POST';
+                
+                if (currentEditConfigId) {
+                    url += `/${currentEditConfigId}`;
+                    method = 'PUT';
+                }
+                
+                if (configType === 'component') {
+                    url = currentEditConfigId ? 
+                        `/api/admin/config/component/${currentEditConfigId}` : 
+                        '/api/admin/config/component';
+                }
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert(result.message);
+                    // 关闭模态框
+                    if (configType === 'status') closeStatusConfigModal();
+                    else if (configType === 'source') closeSourceConfigModal();
+                    else if (configType === 'board-type') closeBoardTypeConfigModal();
+                    else if (configType === 'component') closeComponentConfigModal();
+                    
+                    // 重新加载数据
+                    loadConfigData(configType);
+                } else {
+                    alert('错误: ' + result.error);
+                }
+            } catch (error) {
+                alert('操作失败: ' + error.message);
+            }
+        }
+
+        // 加载统计信息
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/admin/stats');
+                const stats = await response.json();
+                
+                if (response.ok) {
+                    displayStats(stats);
+                } else {
+                    console.error('加载统计信息失败:', stats.error);
+                }
+            } catch (error) {
+                console.error('加载统计信息时出错:', error);
+            }
+        }
+
+        // 显示统计信息
+        function displayStats(stats) {
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${stats.total_users}</div>
+                    <div class="stat-label">总用户数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.admin_count}</div>
+                    <div class="stat-label">管理员数量</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.regular_users}</div>
+                    <div class="stat-label">普通用户数量</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.total_projects}</div>
+                    <div class="stat-label">总项目数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.active_projects}</div>
+                    <div class="stat-label">活跃项目数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.total_shares}</div>
+                    <div class="stat-label">总分享数</div>
+                </div>
+            `;
+        }
+
+        // 加载用户列表
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/admin/users');
+                const users = await response.json();
+                
+                if (response.ok) {
+                    displayUsers(users);
+                } else {
+                    console.error('加载用户列表失败:', users.error);
+                }
+            } catch (error) {
+                console.error('加载用户列表时出错:', error);
+            }
+        }
+
+        // 显示用户列表
+        function displayUsers(users) {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td>${user.id}</td>
+                    <td>${user.username}</td>
+                    <td>
+                        <span class="user-badge ${user.is_admin ? 'admin' : 'user'}">
+                            ${user.is_admin ? '管理员' : '普通用户'}
+                        </span>
+                    </td>
+                    <td>${new Date(user.created_at).toLocaleString()}</td>
+                    <td class="actions">
+                        <button class="btn btn-warning" onclick="showEditUserModal(${user.id}, '${user.username}', ${user.is_admin})">编辑</button>
+                        <button class="btn btn-danger" onclick="deleteUser(${user.id}, '${user.username}')">删除</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 显示添加用户模态框
+        function showAddUserModal() {
+            currentEditUserId = null;
+            document.getElementById('modalTitle').textContent = '添加用户';
+            document.getElementById('submitBtn').textContent = '添加';
+            document.getElementById('userForm').reset();
+            document.getElementById('userModal').style.display = 'block';
+        }
+
+        // 显示编辑用户模态框
+        function showEditUserModal(userId, username, isAdmin) {
+            currentEditUserId = userId;
+            document.getElementById('modalTitle').textContent = '编辑用户';
+            document.getElementById('submitBtn').textContent = '保存';
+            document.getElementById('username').value = username;
+            document.getElementById('password').value = '';
+            document.getElementById('password').placeholder = '留空表示不修改密码';
+            document.getElementById('is_admin').checked = isAdmin;
+            document.getElementById('userModal').style.display = 'block';
+        }
+
+        // 关闭用户模态框
+        function closeUserModal() {
+            document.getElementById('userModal').style.display = 'none';
+            document.getElementById('password').placeholder = '';
+            currentEditUserId = null;
+        }
+
+        // 提交用户表单
+        document.getElementById('userForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const userData = {
+                username: formData.get('username'),
+                password: formData.get('password'),
+                is_admin: formData.has('is_admin')
+            };
+
+            try {
+                let response;
+                if (currentEditUserId) {
+                    // 编辑用户
+                    if (!userData.password) {
+                        delete userData.password; // 不修改密码
+                    }
+                    response = await fetch(`/api/admin/users/${currentEditUserId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(userData)
+                    });
+                } else {
+                    // 添加用户
+                    response = await fetch('/api/admin/users', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(userData)
+                    });
+                }
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert(result.message);
+                    closeUserModal();
+                    loadUsers(); // 重新加载用户列表
+                    loadStats(); // 重新加载统计信息
+                } else {
+                    alert('错误: ' + result.error);
+                }
+            } catch (error) {
+                alert('操作失败: ' + error.message);
+            }
+        });
+
+        // 删除用户
+        async function deleteUser(userId, username) {
+            if (!confirm(`确定要删除用户 "${username}" 吗？此操作不可撤销，将删除该用户的所有数据。`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert(result.message);
+                    loadUsers(); // 重新加载用户列表
+                    loadStats(); // 重新加载统计信息
+                } else {
+                    alert('错误: ' + result.error);
+                }
+            } catch (error) {
+                alert('删除失败: ' + error.message);
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            loadUsers();
+            
+            // 添加配置表单提交事件
+            document.getElementById('statusConfigForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await submitConfigForm('status', this);
+            });
+
+            document.getElementById('sourceConfigForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await submitConfigForm('source', this);
+            });
+
+            document.getElementById('boardTypeConfigForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await submitConfigForm('board-type', this);
+            });
+
+            document.getElementById('componentConfigForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await submitConfigForm('component', this);
+            });
+        });
+
+        // 点击模态框外部关闭模态框
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('userModal');
+            if (event.target === modal) {
+                closeUserModal();
+            }
+            
+            // 配置模态框关闭
+            const statusModal = document.getElementById('statusConfigModal');
+            if (event.target === statusModal) {
+                closeStatusConfigModal();
+            }
+            
+            const sourceModal = document.getElementById('sourceConfigModal');
+            if (event.target === sourceModal) {
+                closeSourceConfigModal();
+            }
+            
+            const boardTypeModal = document.getElementById('boardTypeConfigModal');
+            if (event.target === boardTypeModal) {
+                closeBoardTypeConfigModal();
+            }
+            
+            const componentModal = document.getElementById('componentConfigModal');
+            if (event.target === componentModal) {
+                closeComponentConfigModal();
+            }
+        });
+    </script>
+</body>
+</html>

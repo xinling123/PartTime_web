@@ -1,0 +1,56 @@
+<div id="addModal" class="add-modal">
+    <div class="modal-header">
+        <h3>新增信息</h3>
+        <span class="modal-close" onclick="closeAddModal()">&times;</span>
+    </div>
+    <form id="addForm">
+        <div class="form-group">
+            <label>来源</label>
+            <select class="form-control" id="source" required>
+                <option value="">请选择来源</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>名字</label>
+            <input type="text" class="form-control" id="name" required>
+        </div>
+        <div class="form-group">
+            <label>价格</label>
+            <input type="number" class="form-control" id="price" step="0.01" required>
+        </div>
+        <div class="form-group">
+            <label>类型</label>
+            <select class="form-control" id="type" required>
+                <option value="">请选择类型</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>备注</label>
+            <textarea class="form-control" id="remark" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+            <label>状态</label>
+            <select class="form-control" id="status" required>
+                <option value="">请选择状态</option>
+            </select>
+        </div>
+        <!-- 移动元器件选择模块到状态选择下方 -->
+        <div class="form-group">
+            <label>选择元器件</label>
+            <div id="componentList" style="height: 200px; overflow-y: auto; margin-top: 10px; 
+                border: 1px solid #ddd; padding: 10px; border-radius: 4px; 
+                background: white; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+                background-color: #ffffff;
+                max-height: 200px;">
+                <div id="componentLoading" style="display:none; text-align:center; padding:10px;">
+                    加载中...
+                </div>
+                <div id="componentItems" style="min-height: 180px; padding: 8px;"></div>
+            </div>
+        </div>
+        <div class="modal-buttons">
+            <button type="button" class="btn-component" onclick="submitAddForm()">确定</button>
+            <button type="button" class="btn-requirement" onclick="closeAddModal()">取消</button>
+        </div>
+    </form>
+</div>

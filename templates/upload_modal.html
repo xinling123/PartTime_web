@@ -1,0 +1,1249 @@
+<!-- 文件上传模态框 -->
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadModalLabel">文件上传</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- 拖拽上传区域 -->
+                <div class="mb-3">
+                    <div id="dropZone" class="drop-zone border-2 border-dashed p-4 text-center">
+                        <div class="drop-zone-content">
+                            <i class="bi bi-cloud-upload display-1 text-muted mb-3"></i>
+                            <h5 class="text-muted mb-2">拖拽文件或文件夹到此处</h5>
+                            <p class="text-muted mb-3">或者</p>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-primary" id="selectFilesBtn">
+                                    <i class="bi bi-file-earmark-plus me-2"></i>选择文件
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" id="selectFolderBtn">
+                                    <i class="bi bi-folder-plus me-2"></i>选择文件夹
+                                </button>
+                </div>
+                            <div class="mt-2">
+                                <small class="text-muted">支持拖拽整个文件夹进行上传</small>
+                            </div>
+                        </div>
+                        <div class="drop-zone-overlay">
+                            <div class="drop-zone-overlay-content">
+                                <i class="bi bi-download display-1 text-primary mb-3"></i>
+                                <h4 class="text-primary">松开鼠标上传文件</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 隐藏的文件输入框 -->
+                    <input type="file" class="d-none" id="fileInput" multiple>
+                    <input type="file" class="d-none" id="folderInput" webkitdirectory multiple>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">已选择的文件</label>
+                    <div id="fileTree" class="border p-3" style="max-height: 300px; overflow-y: auto;">
+                        <!-- 文件树将在这里显示 -->
+                    </div>
+                </div>
+                <div class="upload-progress d-none">
+                    <div class="overall-progress mb-3">
+                        <label class="form-label">总体进度</label>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <small class="text-muted">上传进度: <span class="progress-text">0%</span></small>
+                    </div>
+                    <div class="current-file mb-2 d-none">
+                        <small class="text-muted">正在上传: <span class="current-file-name"></span></small>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" id="startUpload" disabled>开始上传</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 右上角通知 Toast -->
+<div class="position-fixed top-0 end-0 p-3" style="z-index: 1070">
+    <div id="uploadToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="bi me-2" id="toastIcon"></i>
+            <strong class="me-auto" id="toastTitle">文件验证</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toastMessage"></div>
+    </div>
+</div>
+
+<!-- 文件树项目模板 -->
+<template id="fileTreeItem">
+    <div class="file-item">
+        <div class="file-item-content">
+            <div class="folder-toggle" style="display: none;">
+                <i class="bi bi-chevron-right"></i>
+            </div>
+            <i class="bi"></i>
+            <span class="file-name"></span>
+            <small class="text-muted file-size"></small>
+            <span class="upload-status"></span>
+            <button type="button" class="btn btn-sm btn-link retry-btn" style="display: none;">
+                <i class="bi bi-arrow-clockwise"></i> 重试
+            </button>
+        </div>
+        <div class="file-children" style="display: none;"></div>
+    </div>
+</template>
+
+<style>
+.file-item {
+    padding: 4px 0;
+    cursor: default;
+}
+
+.file-item-content {
+    display: flex;
+    align-items: center;
+    padding: 4px 0;
+}
+
+.folder-toggle {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-right: 4px;
+    transition: transform 0.2s ease;
+}
+
+.folder-toggle:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+.folder-toggle.open {
+    transform: rotate(90deg);
+}
+
+.file-item i {
+    margin-right: 5px;
+    width: 20px;
+    text-align: center;
+}
+
+.file-item .file-name {
+    flex-grow: 1;
+    margin-right: 10px;
+}
+
+.file-item .file-size {
+    margin-right: 10px;
+    white-space: nowrap;
+}
+
+.file-item .upload-status {
+    margin-left: auto;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    display: none;
+}
+
+.file-item .retry-btn {
+    display: none;
+    padding: 2px 8px;
+    margin-left: 8px;
+    color: #dc3545;
+    font-size: 0.75rem;
+}
+
+.file-item .retry-btn:hover {
+    color: #bb2d3b;
+    text-decoration: none;
+}
+
+.file-item .retry-btn i {
+    margin-right: 2px;
+    width: auto;
+}
+
+.file-item .upload-status.pending {
+    display: inline-block;
+    background-color: #e9ecef;
+    color: #6c757d;
+}
+
+.file-item .upload-status.uploading {
+    display: inline-block;
+    background-color: #cfe2ff;
+    color: #0d6efd;
+}
+
+.file-item .upload-status.success {
+    display: inline-block;
+    background-color: #d1e7dd;
+    color: #198754;
+}
+
+.file-item .upload-status.error {
+    display: inline-block;
+    background-color: #f8d7da;
+    color: #dc3545;
+}
+
+.file-item.folder > .file-item-content {
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.file-item.folder > .file-item-content:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.file-item .file-children {
+    margin-left: 24px;
+}
+
+.upload-progress .progress {
+    height: 0.6rem;
+    border-radius: 0.25rem;
+    background-color: #e9ecef;
+}
+
+.current-file {
+    margin-top: 0.5rem;
+}
+
+.current-file-name {
+    font-weight: 500;
+    color: #0d6efd;
+}
+
+#fileTree {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+/* 上传按钮禁用状态样式 */
+#startUpload:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+/* Toast 样式 */
+.toast {
+    background-color: white;
+    min-width: 300px;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.toast.bg-success .toast-header {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+.toast.bg-warning .toast-header {
+    background-color: #fff3cd;
+    color: #664d03;
+}
+
+.toast.bg-danger .toast-header {
+    background-color: #f8d7da;
+    color: #842029;
+}
+
+.toast .bi-check-circle-fill {
+    color: #198754;
+}
+
+.toast .bi-exclamation-circle-fill {
+    color: #ffc107;
+}
+
+.toast .bi-x-circle-fill {
+    color: #dc3545;
+}
+
+/* 移除旧的通知样式 */
+#uploadNotification {
+    display: none !important;
+}
+
+/* 拖拽区域样式 */
+.drop-zone {
+    position: relative;
+    border-color: #dee2e6 !important;
+    border-radius: 0.375rem;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.drop-zone:hover {
+    border-color: #0d6efd !important;
+    background-color: #e7f1ff;
+}
+
+.drop-zone.dragover {
+    border-color: #0d6efd !important;
+    background-color: #e7f1ff;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.drop-zone-content {
+    text-align: center;
+    z-index: 1;
+}
+
+.drop-zone-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(13, 110, 253, 0.1);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.375rem;
+    z-index: 2;
+}
+
+.drop-zone.dragover .drop-zone-content {
+    display: none;
+}
+
+.drop-zone.dragover .drop-zone-overlay {
+    display: flex;
+}
+
+.drop-zone-overlay-content {
+    text-align: center;
+}
+
+.btn-group .btn {
+    min-width: 120px;
+}
+
+/* 文件树样式优化 */
+.file-item {
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.file-item:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.file-item.folder > .file-item-content {
+    border-radius: 4px;
+}
+
+.folder-toggle {
+    border-radius: 2px;
+}
+
+/* 页面拖拽防护 */
+body.dragging {
+    user-select: none;
+}
+
+body.dragging * {
+    pointer-events: none;
+}
+
+body.dragging #dropZone {
+    pointer-events: all;
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+    .drop-zone {
+        min-height: 150px;
+        padding: 2rem 1rem;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+    }
+    
+    .btn-group .btn {
+        margin-bottom: 0.5rem;
+        min-width: auto;
+    }
+}
+</style>
+
+<script>
+// 配置
+const UPLOAD_CONFIG = {
+    MAX_FILES: 100, // 增加文件数量限制以支持文件夹上传
+    MAX_FILE_SIZE_MB: 300,
+    MAX_FILE_SIZE_BYTES: 300 * 1024 * 1024, // 300MB in bytes
+    MAX_TOTAL_SIZE_GB: 2, // 添加总文件大小限制
+    MAX_TOTAL_SIZE_BYTES: 2 * 1024 * 1024 * 1024, // 2GB
+};
+
+// 全局变量保存选择的文件 - 设置为window属性以便其他脚本访问
+window.selectedFiles = [];
+// 同时设置为全局变量，以便dashboard.html中的代码能访问
+var selectedFiles = [];
+
+// 显示 Toast 通知
+function showToastNotification(message, type, details = '', isValidation = false) {
+    const toast = document.getElementById('uploadToast');
+    const toastIcon = document.getElementById('toastIcon');
+    const toastTitle = document.getElementById('toastTitle');
+    const toastMessage = document.getElementById('toastMessage');
+    
+    // 重置样式
+    toast.classList.remove('bg-success', 'bg-warning', 'bg-danger');
+    toastIcon.classList.remove('bi-check-circle-fill', 'bi-exclamation-circle-fill', 'bi-x-circle-fill');
+    
+    // 设置样式和内容
+    if (isValidation) {
+        // 验证阶段的提示
+        switch (type) {
+            case 'success':
+                toast.classList.add('bg-success');
+                toastIcon.classList.add('bi-check-circle-fill');
+                toastTitle.textContent = '文件验证通过';
+                break;
+            case 'warning':
+                toast.classList.add('bg-warning');
+                toastIcon.classList.add('bi-exclamation-circle-fill');
+                toastTitle.textContent = '文件验证提醒';
+                break;
+            case 'danger':
+                toast.classList.add('bg-danger');
+                toastIcon.classList.add('bi-x-circle-fill');
+                toastTitle.textContent = '文件验证失败';
+                break;
+        }
+    } else {
+        // 上传完成的提示
+        switch (type) {
+            case 'success':
+                toast.classList.add('bg-success');
+                toastIcon.classList.add('bi-check-circle-fill');
+                toastTitle.textContent = '上传完成';
+                break;
+            case 'warning':
+                toast.classList.add('bg-warning');
+                toastIcon.classList.add('bi-exclamation-circle-fill');
+                toastTitle.textContent = '上传部分完成';
+                break;
+            case 'danger':
+                toast.classList.add('bg-danger');
+                toastIcon.classList.add('bi-x-circle-fill');
+                toastTitle.textContent = '上传失败';
+                break;
+        }
+    }
+    
+    toastMessage.innerHTML = message;
+    if (details) {
+        toastMessage.innerHTML += `<br><small class="text-muted1">${details}</small>`;
+    }
+    
+    // 显示 Toast
+    const bsToast = new bootstrap.Toast(toast, {
+        animation: true,
+        autohide: true,
+        delay: 5000
+    });
+    bsToast.show();
+}
+
+// 文件大小格式化
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// 验证选择的文件
+async function validateFiles(files) {
+    let totalFiles = 0;
+    let totalSize = 0;
+    const oversizedFiles = [];
+    const filesInfo = [];
+
+    // 直接处理文件列表（因为现在文件已经在handleFileSelect中处理过了）
+        for (const file of files) {
+            totalFiles++;
+            totalSize += file.size;
+            filesInfo.push({
+            name: file.webkitRelativePath || file.name,
+                size: file.size
+            });
+            
+            if (file.size > UPLOAD_CONFIG.MAX_FILE_SIZE_BYTES) {
+                oversizedFiles.push({
+                name: file.webkitRelativePath || file.name,
+                    size: formatFileSize(file.size)
+                });
+        }
+    }
+
+    // 验证结果
+    let isValid = true;
+    let message = '';
+    let type = 'success';
+    let details = '';
+
+    if (totalFiles > UPLOAD_CONFIG.MAX_FILES) {
+        isValid = false;
+        message = `超出文件数量限制`;
+        type = 'danger';
+        details = `当前选择了 ${totalFiles} 个文件，最多允许 ${UPLOAD_CONFIG.MAX_FILES} 个文件`;
+    } else if (totalSize > UPLOAD_CONFIG.MAX_TOTAL_SIZE_BYTES) {
+        isValid = false;
+        message = `总文件大小超出限制`;
+        type = 'danger';
+        details = `当前文件总大小: ${formatFileSize(totalSize)}，最大允许: ${UPLOAD_CONFIG.MAX_TOTAL_SIZE_GB}GB`;
+    } else if (oversizedFiles.length > 0) {
+        isValid = false;
+        message = `文件大小超出限制`;
+        type = 'danger';
+        details = `以下文件超过${UPLOAD_CONFIG.MAX_FILE_SIZE_MB}MB:\n${
+            oversizedFiles.map(f => `${f.name}: ${f.size}`).join('\n')
+        }`;
+    } else {
+        message = `文件检查通过`;
+        details = `已选择 ${totalFiles} 个文件，总大小: ${formatFileSize(totalSize)}`;
+        type = 'success';
+    }
+
+    // 显示验证结果提示
+    showToastNotification(message, type, details, true);
+
+    return {
+        isValid,
+        totalFiles,
+        totalSize,
+        filesInfo
+    };
+}
+
+// 处理文件选择
+async function handleFileSelect(event, isDrop = false) {
+    let files = [];
+    const startUploadBtn = document.getElementById('startUpload');
+    
+    if (isDrop && event.dataTransfer) {
+        // 处理拖拽事件
+        const items = event.dataTransfer.items;
+        if (items) {
+            // 使用DataTransferItem API来支持文件夹拖拽
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                if (item.kind === 'file') {
+                    const entry = item.webkitGetAsEntry();
+                    if (entry) {
+                        if (entry.isDirectory) {
+                            // 对于拖拽的文件夹，我们需要特殊处理以保持文件夹结构
+                            console.log('Processing dragged folder:', entry.name);
+                            const folderFiles = await getFilesFromEntryWithFolderName(entry, entry.name);
+                            files = files.concat(folderFiles);
+                        } else {
+                            // 对于单个文件，直接处理
+                            const folderFiles = await getFilesFromEntry(entry);
+                            files = files.concat(folderFiles);
+                        }
+                    } else {
+                        files.push(item.getAsFile());
+                    }
+                }
+            }
+        } else {
+            // 降级处理
+            files = Array.from(event.dataTransfer.files);
+        }
+    } else {
+        // 处理普通文件选择
+        files = Array.from(event.target.files);
+    }
+    
+    if (!files.length) {
+        showToastNotification('没有选择任何文件', 'warning', '', true);
+        startUploadBtn.disabled = true;
+        return;
+    }
+
+    // 验证文件
+    const validation = await validateFiles(files);
+
+    if (validation.isValid) {
+        // 确保文件路径一致性
+        files.forEach(file => {
+            // 统一路径处理：确保所有文件都有_fullPath属性
+            if (!file._fullPath) {
+                // 如果没有_fullPath，使用webkitRelativePath或文件名创建
+                file._fullPath = file.webkitRelativePath || file.name;
+            }
+            
+            const filePath = file._fullPath;
+            console.log('File prepared for upload:', filePath, 'from source:', file.webkitRelativePath ? 'webkitRelativePath' : file._fullPath ? '_fullPath' : 'name');
+        });
+        
+        // 确保界面不被阻塞，并移除任何可能残留的拖拽状态
+        setTimeout(() => {
+            document.body.classList.remove('dragging');
+            console.log('File preparation completed for', files.length, 'files');
+            console.log('Ensured dragging class is removed');
+        }, 0);
+        
+        // 保存选择的文件到全局变量
+        window.selectedFiles = files;
+        selectedFiles = files;
+        
+        // 显示文件树
+        try {
+        createFileTree(files);
+        // 启用上传按钮
+        startUploadBtn.disabled = false;
+        } catch (error) {
+            console.error('Failed to create file tree:', error);
+            showToastNotification('文件树创建失败', 'danger', '请重新选择文件', true);
+            startUploadBtn.disabled = true;
+        }
+    } else {
+        // 清空选择
+        window.selectedFiles = [];
+        selectedFiles = [];
+        if (event.target) {
+        event.target.value = '';
+        }
+        document.getElementById('fileTree').innerHTML = '';
+        startUploadBtn.disabled = true;
+    }
+}
+
+// 专门处理拖拽文件夹的函数
+async function getFilesFromEntryWithFolderName(entry, folderName) {
+    const files = [];
+    
+    if (entry.isDirectory) {
+        const dirReader = entry.createReader();
+        const entries = await new Promise(resolve => {
+            const allEntries = [];
+            function readEntries() {
+                dirReader.readEntries(results => {
+                    if (results.length) {
+                        allEntries.push(...results);
+                        readEntries(); // 继续读取
+                    } else {
+                        resolve(allEntries);
+                    }
+                });
+            }
+            readEntries();
+        });
+        
+        console.log('Processing dragged folder contents:', folderName);
+        
+        for (const childEntry of entries) {
+            const childFiles = await getFilesFromEntry(childEntry, folderName);
+            files.push(...childFiles);
+        }
+    }
+    
+    return files;
+}
+
+// 递归获取文件夹中的所有文件
+async function getFilesFromEntry(entry, basePath = '') {
+    const files = [];
+    
+    if (entry.isFile) {
+        const file = await new Promise(resolve => entry.file(resolve));
+        // 设置文件的相对路径 - 保持完整的文件夹层级结构
+        const relativePath = basePath ? `${basePath}/${entry.name}` : entry.name;
+        
+        // 使用自定义属性来保存完整路径，因为webkitRelativePath可能是只读的
+        file._fullPath = relativePath;
+        
+        // 尝试设置webkitRelativePath，但不依赖它
+        try {
+            // 检查是否可以设置
+            const descriptor = Object.getOwnPropertyDescriptor(file, 'webkitRelativePath');
+            if (!descriptor || descriptor.writable !== false) {
+                file.webkitRelativePath = relativePath;
+            }
+        } catch (e) {
+            console.log('Cannot set webkitRelativePath, using custom property only');
+        }
+        
+        console.log('Setting file path:', relativePath, 'for file:', entry.name);
+        console.log('File _fullPath set to:', file._fullPath);
+        files.push(file);
+    } else if (entry.isDirectory) {
+        const dirReader = entry.createReader();
+        const entries = await new Promise(resolve => {
+            const allEntries = [];
+            function readEntries() {
+                dirReader.readEntries(results => {
+                    if (results.length) {
+                        allEntries.push(...results);
+                        readEntries(); // 继续读取
+                    } else {
+                        resolve(allEntries);
+                    }
+                });
+            }
+            readEntries();
+        });
+        
+        // 构建新的基础路径
+        // 如果已经有basePath，说明这是子文件夹，需要添加当前文件夹名称
+        // 如果没有basePath，说明这是顶层拖拽的文件夹，basePath已经在调用时设置了
+        const newBasePath = basePath ? `${basePath}/${entry.name}` : entry.name;
+        console.log('Processing directory:', entry.name, 'with current basePath:', basePath, 'new basePath:', newBasePath);
+        
+        for (const childEntry of entries) {
+            const childFiles = await getFilesFromEntry(childEntry, newBasePath);
+            files.push(...childFiles);
+        }
+    }
+    
+    return files;
+}
+
+// 创建文件树显示
+function createFileTree(files) {
+    try {
+        const fileTree = document.getElementById('fileTree');
+        fileTree.innerHTML = '';
+        
+        if (!files.length) {
+            fileTree.innerHTML = '<p class="text-muted text-center py-3">暂无文件</p>';
+            return;
+        }
+        
+        // 构建文件结构树
+        const fileStructure = {};
+        
+        console.log('Creating file tree for', files.length, 'files');
+    
+    files.forEach(file => {
+        // 优先使用自定义的完整路径
+        const path = file._fullPath || file.webkitRelativePath || file.name;
+        const pathParts = path.split('/');
+        let current = fileStructure;
+        
+        pathParts.forEach((part, index) => {
+            if (index === pathParts.length - 1) {
+                // 这是文件
+                current[part] = {
+                    type: 'file',
+                    file: file,
+                    size: file.size
+                };
+            } else {
+                // 这是文件夹
+                if (!current[part]) {
+                    current[part] = {
+                        type: 'folder',
+                        children: {}
+                    };
+                }
+                current = current[part].children;
+            }
+        });
+    });
+    
+    // 渲染文件树
+    function renderNode(node, name, parentElement, level = 0) {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'file-item';
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'file-item-content';
+        contentDiv.style.paddingLeft = (level * 20) + 'px';
+        
+        if (node.type === 'folder') {
+            itemDiv.classList.add('folder');
+            
+            const toggleDiv = document.createElement('div');
+            toggleDiv.className = 'folder-toggle';
+            toggleDiv.innerHTML = '<i class="bi bi-chevron-right"></i>';
+            contentDiv.appendChild(toggleDiv);
+            
+            const iconElement = document.createElement('i');
+            iconElement.className = 'bi bi-folder-fill text-warning';
+            contentDiv.appendChild(iconElement);
+            
+            const nameElement = document.createElement('span');
+            nameElement.className = 'file-name';
+            nameElement.textContent = name;
+            contentDiv.appendChild(nameElement);
+            
+            const childrenDiv = document.createElement('div');
+            childrenDiv.className = 'file-children';
+            childrenDiv.style.display = 'none';
+            
+            // 渲染子项
+            Object.keys(node.children).forEach(childName => {
+                renderNode(node.children[childName], childName, childrenDiv, level + 1);
+            });
+            
+            // 点击切换展开/折叠
+            contentDiv.addEventListener('click', () => {
+                const isOpen = toggleDiv.classList.contains('open');
+                if (isOpen) {
+                    toggleDiv.classList.remove('open');
+                    childrenDiv.style.display = 'none';
+                } else {
+                    toggleDiv.classList.add('open');
+                    childrenDiv.style.display = 'block';
+                }
+            });
+            
+            itemDiv.appendChild(contentDiv);
+            itemDiv.appendChild(childrenDiv);
+        } else {
+            // 文件
+            const iconElement = document.createElement('i');
+            const extension = name.split('.').pop().toLowerCase();
+            
+            // 根据文件扩展名设置图标
+            if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'].includes(extension)) {
+                iconElement.className = 'bi bi-file-earmark-image text-primary';
+            } else if (['pdf'].includes(extension)) {
+                iconElement.className = 'bi bi-file-earmark-pdf text-danger';
+            } else if (['doc', 'docx'].includes(extension)) {
+                iconElement.className = 'bi bi-file-earmark-word text-primary';
+            } else if (['xls', 'xlsx'].includes(extension)) {
+                iconElement.className = 'bi bi-file-earmark-excel text-success';
+            } else if (['ppt', 'pptx'].includes(extension)) {
+                iconElement.className = 'bi bi-file-earmark-ppt text-warning';
+            } else if (['txt', 'md'].includes(extension)) {
+                iconElement.className = 'bi bi-file-earmark-text text-secondary';
+            } else if (['zip', 'rar', '7z'].includes(extension)) {
+                iconElement.className = 'bi bi-file-earmark-zip text-warning';
+            } else {
+                iconElement.className = 'bi bi-file-earmark text-secondary';
+            }
+            
+            contentDiv.appendChild(iconElement);
+            
+            const nameElement = document.createElement('span');
+            nameElement.className = 'file-name';
+            nameElement.textContent = name;
+            contentDiv.appendChild(nameElement);
+            
+            const sizeElement = document.createElement('small');
+            sizeElement.className = 'text-muted file-size';
+            sizeElement.textContent = formatFileSize(node.size);
+            contentDiv.appendChild(sizeElement);
+            
+            // 添加上传状态元素
+            const statusSpan = document.createElement('span');
+            statusSpan.className = 'upload-status pending';
+            statusSpan.textContent = '待上传';
+            contentDiv.appendChild(statusSpan);
+            
+            // 添加重试按钮
+            const retryBtn = document.createElement('button');
+            retryBtn.type = 'button';
+            retryBtn.className = 'btn btn-sm btn-link retry-btn';
+            retryBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> 重试';
+            retryBtn.style.display = 'none';
+            contentDiv.appendChild(retryBtn);
+            
+            itemDiv.appendChild(contentDiv);
+            // 优先使用自定义的完整路径
+            const filePath = node.file._fullPath || node.file.webkitRelativePath || node.file.name;
+            itemDiv.dataset.path = filePath;
+        }
+        
+        parentElement.appendChild(itemDiv);
+    }
+    
+    // 渲染根级项目
+    Object.keys(fileStructure).forEach(name => {
+        renderNode(fileStructure[name], name, fileTree);
+    });
+    
+            console.log('File tree created successfully with structure:', Object.keys(fileStructure));
+        
+        // 确保拖拽状态被清除
+        setTimeout(() => {
+            document.body.classList.remove('dragging');
+            console.log('File tree completed, dragging class removed');
+        }, 100);
+    } catch (error) {
+        console.error('Error creating file tree:', error);
+        const fileTree = document.getElementById('fileTree');
+        fileTree.innerHTML = '<p class="text-danger text-center py-3">文件树创建失败，请重试</p>';
+        // 确保不会阻塞界面并清除拖拽状态
+        setTimeout(() => {
+            document.body.classList.remove('dragging');
+            console.log('File tree creation error handled, dragging class removed');
+        }, 0);
+    }
+}
+
+// 绑定文件选择事件
+const fileInput = document.getElementById('fileInput');
+const folderInput = document.getElementById('folderInput');
+const selectFilesBtn = document.getElementById('selectFilesBtn');
+const selectFolderBtn = document.getElementById('selectFolderBtn');
+
+fileInput.addEventListener('change', (e) => handleFileSelect(e, false));
+folderInput.addEventListener('change', (e) => handleFileSelect(e, false));
+
+// 按钮点击事件
+selectFilesBtn.addEventListener('click', () => {
+    fileInput.click();
+});
+
+selectFolderBtn.addEventListener('click', () => {
+    folderInput.click();
+});
+
+// 处理拖放
+const dropZone = document.getElementById('dropZone');
+if (dropZone) {
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        // 只有当鼠标真正离开dropZone区域时才移除样式
+        if (!dropZone.contains(e.relatedTarget)) {
+        dropZone.classList.remove('dragover');
+        }
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('dragover');
+        // 确保移除全局拖拽状态
+        document.body.classList.remove('dragging');
+        console.log('Drag ended, removing dragging class');
+        handleFileSelect(e, true);
+    });
+
+    // 点击拖拽区域打开文件选择
+    dropZone.addEventListener('click', (e) => {
+        if (e.target === dropZone || e.target.closest('.drop-zone-content')) {
+            // 如果点击的不是按钮，则默认打开文件选择
+            if (!e.target.closest('button')) {
+                fileInput.click();
+            }
+        }
+    });
+}
+
+// 处理上传完成的状态显示
+function handleUploadCompletion(results) {
+    const totalFiles = results.length;
+    const successCount = results.filter(r => r.status === 'success').length;
+    const failedCount = results.filter(r => r.status === 'error').length;
+    const totalSize = results.reduce((sum, r) => sum + (r.file ? r.file.size : 0), 0);
+    
+    let message = '';
+    let type = 'success';
+    let details = '';
+
+    if (successCount === totalFiles) {
+        // 全部成功
+        message = `文件上传成功`;
+        type = 'success';
+        details = `已上传 ${totalFiles} 个文件（总大小：${formatFileSize(totalSize)}）`;
+    } else if (failedCount === totalFiles) {
+        // 全部失败
+        message = `文件上传失败`;
+        type = 'danger';
+        details = `${totalFiles} 个文件上传失败，请检查网络连接或稍后重试`;
+    } else {
+        // 部分成功
+        message = `部分文件上传成功`;
+        type = 'warning';
+        details = `共 ${totalFiles} 个文件（${formatFileSize(totalSize)}）\n成功：${successCount} 个，失败：${failedCount} 个`;
+    }
+
+    // 显示上传结果提示，isValidation 参数默认为 false
+    showToastNotification(message, type, details);
+}
+
+// 重置上传模态框状态
+function resetUploadModal() {
+    const fileTree = document.getElementById('fileTree');
+    const uploadProgress = document.querySelector('.upload-progress');
+    const progressBar = document.querySelector('.progress-bar');
+    const progressText = document.querySelector('.progress-text');
+    const currentFileDiv = document.querySelector('.current-file');
+    const startUploadBtn = document.getElementById('startUpload');
+    
+    // 清空选择的文件
+    window.selectedFiles = [];
+    selectedFiles = [];
+    
+    // 清空文件输入框
+    fileInput.value = '';
+    folderInput.value = '';
+    
+    // 清空文件树
+    fileTree.innerHTML = '';
+    
+    // 隐藏进度条
+    uploadProgress.classList.add('d-none');
+    progressBar.style.width = '0%';
+    progressText.textContent = '0%';
+    
+    // 隐藏当前文件信息
+    currentFileDiv.classList.add('d-none');
+    
+    // 禁用上传按钮
+    startUploadBtn.disabled = true;
+    
+    // 重置文件状态锁定
+    resetFileStatusLocks();
+}
+
+// 监听模态框关闭事件
+document.getElementById('uploadModal').addEventListener('hidden.bs.modal', resetUploadModal);
+
+// 获取当前选择的文件（提供给外部调用）
+function getSelectedFiles() {
+    return window.selectedFiles || [];
+}
+
+// 重置文件状态锁定（在开始新的上传时调用）
+function resetFileStatusLocks() {
+    if (window.fileStatusLock) {
+        window.fileStatusLock = {};
+        console.log('File status locks reset');
+    }
+    if (window.lastStatusUpdate) {
+        window.lastStatusUpdate = {};
+        console.log('Last status update tracking reset');
+    }
+}
+
+// 全局拖拽防护
+document.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    document.body.classList.add('dragging');
+});
+
+document.addEventListener('dragover', (e) => {
+    e.preventDefault();
+});
+
+document.addEventListener('dragleave', (e) => {
+    // 检查是否真的离开了页面
+    if (e.clientX === 0 && e.clientY === 0) {
+        document.body.classList.remove('dragging');
+    }
+});
+
+document.addEventListener('drop', (e) => {
+    e.preventDefault();
+    document.body.classList.remove('dragging');
+    
+    // 如果不是在dropZone内，则显示提示
+    if (!e.target.closest('#dropZone')) {
+        showToastNotification('请将文件拖拽到上传区域', 'warning', '点击上传按钮或将文件拖拽到指定区域', true);
+    }
+});
+
+// 修复文件状态更新函数，解决路径匹配问题
+function updateFileStatus(filePath, status, message = '') {
+    // 防止重复状态更新的强化机制
+    const currentTime = Date.now();
+    
+    if (!window.fileStatusLock) {
+        window.fileStatusLock = {};
+    }
+    
+    if (!window.lastStatusUpdate) {
+        window.lastStatusUpdate = {};
+    }
+    
+    // 创建状态锁定键
+    const lockKey = `${filePath}`;
+    const statusKey = `${filePath}_${status}`;
+    
+    // 检查文件是否已经锁定在某个状态
+    if (window.fileStatusLock[lockKey]) {
+        const lockedStatus = window.fileStatusLock[lockKey].status;
+        const lockTime = window.fileStatusLock[lockKey].time;
+        
+        // 如果已经是成功状态，不允许回退到其他状态
+        if (lockedStatus === 'success' && status !== 'success') {
+            console.log('File already in success state, ignoring status change to:', status, 'for:', filePath);
+            return;
+        }
+        
+        // 如果状态在500ms内重复更新相同状态，跳过
+        if (lockedStatus === status && (currentTime - lockTime) < 500) {
+            console.log('Status locked, skipping duplicate update for:', filePath, status);
+            return;
+        }
+    }
+    
+    // 如果相同的状态在200ms内重复更新，则跳过
+    if (window.lastStatusUpdate[statusKey] && (currentTime - window.lastStatusUpdate[statusKey]) < 200) {
+        console.log('Skipping duplicate status update for:', filePath, status);
+        return;
+    }
+    
+    // 设置状态锁定
+    window.fileStatusLock[lockKey] = { status: status, time: currentTime };
+    window.lastStatusUpdate[statusKey] = currentTime;
+    
+    console.log('Updating file status:', filePath, status, message);
+    
+    // 使用更安全的方法查找文件项：遍历所有文件项并比较data-path属性
+    const fileTree = document.getElementById('fileTree');
+    if (!fileTree) {
+        console.warn('FileTree not found');
+        return;
+    }
+    
+    const fileItems = fileTree.querySelectorAll('.file-item:not(.folder)');
+    let targetItem = null;
+    let foundCount = 0;
+    
+    // 查找匹配的文件项
+    for (const item of fileItems) {
+        const itemPath = item.dataset.path;
+        
+        // 尝试多种路径匹配方式
+        if (itemPath === filePath || 
+            itemPath === filePath.replace(/\\/g, '/') ||
+            filePath === itemPath.replace(/\\/g, '/') ||
+            // 对于拖拽上传，可能路径不匹配，尝试匹配文件名
+            (itemPath && filePath && itemPath.split('/').pop() === filePath.split('/').pop() && itemPath.includes('/') === filePath.includes('/'))) {
+            targetItem = item;
+            foundCount++;
+            console.log('Matched file item:', itemPath, 'with requested path:', filePath);
+        }
+    }
+    
+    // 检查是否找到多个匹配项（这可能是问题的原因）
+    if (foundCount > 1) {
+        console.error('Multiple items found for path:', filePath, 'count:', foundCount);
+        console.log('All matching paths:', Array.from(fileItems).filter(item => {
+            const itemPath = item.dataset.path;
+            return itemPath === filePath || 
+                   itemPath === filePath.replace(/\\/g, '/') ||
+                   filePath === itemPath.replace(/\\/g, '/');
+        }).map(item => item.dataset.path));
+        return;
+    }
+    
+    if (targetItem) {
+        const statusSpan = targetItem.querySelector('.upload-status');
+        const retryBtn = targetItem.querySelector('.retry-btn');
+        
+        if (statusSpan) {
+            // 防止重复设置相同状态
+            const currentStatus = statusSpan.className.split(' ').pop();
+            
+            // 状态转换逻辑：pending -> uploading -> success/error
+            // 不允许从 success 回退到其他状态
+            if (currentStatus === 'success' && status !== 'success') {
+                console.log('Preventing status rollback from success to:', status, 'for:', filePath);
+                return;
+            }
+            
+            // 不允许从 uploading 回退到 pending
+            if (currentStatus === 'uploading' && status === 'pending') {
+                console.log('Preventing status rollback from uploading to pending for:', filePath);
+                return;
+            }
+            
+            if (statusSpan.textContent !== message || currentStatus !== status) {
+                statusSpan.className = 'upload-status ' + status;
+                statusSpan.textContent = message;
+                
+                // 更新状态锁定
+                window.fileStatusLock[lockKey] = { status: status, time: currentTime };
+                
+                console.log('Updated status for:', filePath, 'from:', currentStatus, 'to:', status, message);
+            } else {
+                console.log('Status already set for:', filePath, 'skipping update');
+            }
+        }
+
+        if (retryBtn) {
+            // 显示/隐藏重试按钮
+            if (status === 'error') {
+                retryBtn.style.display = 'inline-block';
+            } else {
+                retryBtn.style.display = 'none';
+            }
+        }
+    } else {
+        console.warn('File item not found for path:', filePath);
+        console.log('Available paths:', Array.from(fileItems).map(item => item.dataset.path));
+        console.log('Requested path:', filePath);
+    }
+}
+
+// 确保selectedFiles变量在全局可用
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Upload modal loaded, selectedFiles ready:', typeof selectedFiles, selectedFiles.length);
+    
+    // 添加调试功能：监听上传按钮点击
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.id === 'startUpload') {
+            console.log('上传按钮被点击');
+            console.log('selectedFiles:', selectedFiles);
+            console.log('selectedFiles.length:', selectedFiles.length);
+            console.log('typeof selectedFiles:', typeof selectedFiles);
+        }
+    }, true);
+    
+    // 添加调试功能：监控拖拽状态
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                if (document.body.classList.contains('dragging')) {
+                    console.warn('Body has dragging class - interactions may be blocked');
+                } else {
+                    console.log('Body dragging class removed - interactions should work');
+                }
+            }
+        });
+    });
+    
+    observer.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class']
+    });
+    
+    // 应急清理按钮（开发调试用）
+    window.clearDraggingState = function() {
+        document.body.classList.remove('dragging');
+        console.log('Emergency: dragging state cleared');
+    };
+    
+    // 监听上传开始事件，自动重置状态锁定
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.id === 'startUpload') {
+            console.log('Upload started, resetting file status locks');
+            resetFileStatusLocks();
+    }
+    }, true);
+});
+</script> 
