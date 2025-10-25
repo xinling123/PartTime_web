@@ -20,6 +20,8 @@ def get_db():
     """获取数据库连接的上下文管理器"""
     conn = sqlite3.connect(DATABASE_PATH)
     conn.row_factory = sqlite3.Row  # 使结果可以像字典一样访问
+    # 启用外键约束（SQLite默认关闭）
+    conn.execute('PRAGMA foreign_keys = ON')
     try:
         yield conn
     finally:
@@ -28,6 +30,54 @@ def get_db():
 def hash_password(password):
     """密码哈希"""
     return hashlib.sha256(password.encode()).hexdigest()
+
+def cleanup_orphaned_records():
+    """清理数据库中的孤立记录"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        # 清理孤立的 project_components 记录（引用不存在的项目）
+        cursor.execute('''
+            DELETE FROM project_components 
+            WHERE project_id NOT IN (SELECT id FROM projects)
+        ''')
+        orphaned_components = cursor.rowcount
+        
+        # 清理孤立的 project_requirements 记录
+        cursor.execute('''
+            DELETE FROM project_requirements 
+            WHERE project_id NOT IN (SELECT id FROM projects)
+        ''')
+        orphaned_requirements = cursor.rowcount
+        
+        # 清理孤立的 project_collaborations 记录
+        cursor.execute('''
+            DELETE FROM project_collaborations 
+            WHERE project_id NOT IN (SELECT id FROM projects)
+        ''')
+        orphaned_collaborations = cursor.rowcount
+        
+        # 清理孤立的 shares 记录
+        cursor.execute('''
+            DELETE FROM shares 
+            WHERE project_id NOT IN (SELECT id FROM projects)
+        ''')
+        orphaned_shares = cursor.rowcount
+        
+        # 清理孤立的 upload_sessions 记录
+        cursor.execute('''
+            DELETE FROM upload_sessions 
+            WHERE project_id NOT IN (SELECT id FROM projects)
+        ''')
+        orphaned_sessions = cursor.rowcount
+        
+        conn.commit()
+        
+        print(f"清理了 {orphaned_components} 条孤立的项目元器件记录")
+        print(f"清理了 {orphaned_requirements} 条孤立的项目需求记录")
+        print(f"清理了 {orphaned_collaborations} 条孤立的项目协作记录")
+        print(f"清理了 {orphaned_shares} 条孤立的分享记录")
+        print(f"清理了 {orphaned_sessions} 条孤立的上传会话记录")
 
 def init_database():
     """初始化数据库表结构和基础数据"""

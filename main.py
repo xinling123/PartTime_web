@@ -1947,4 +1947,6 @@ def check_stats_update():
 if __name__ == '__main__':
     # 确保数据库已初始化
     db.init_database()
+    # 清理孤立记录
+    db.cleanup_orphaned_records()
     app.run(host='0.0.0.0', port=5000, debug=True)
